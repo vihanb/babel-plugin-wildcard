@@ -1,0 +1,131 @@
+# babel-plugin-wildcard
+
+Allows you to `import` all files from a directory at compile-time.
+
+## Installation
+
+```sh
+$ npm install babel-plugin-wildcard
+```
+
+## Usage
+
+### Via `.babelrc` (Recommended)
+
+**.babelrc**
+
+```json
+{
+  "plugins": ["wildcard"]
+}
+```
+
+### Via CLI
+
+```sh
+$ babel --plugins include script.js
+```
+
+### Via Node API
+
+```javascript
+require('babel').transform('code', {
+  plugins: ['wildcard']
+});
+```
+
+## Example
+
+With the following folder structure:
+
+```
+|- index.js
+|- dir
+    |- a.js
+    |- b.js
+```
+
+the following JS:
+
+```javascript
+import * as Items from './dir';
+```
+
+will be compiled to:
+
+```javascript
+const Items = {};
+import _wcImport from "./dir/a";
+Items.A = _wcImport;
+import _wcImport1 from "./dir/b";
+Items.B = _wcImport1;
+```
+
+meaning you will be able to access the items using `Items.A` and `Items.B`.
+
+Files are automatically camel-cased and in the `import` statements the extensions are clipped unless specified otherwise (see below)
+
+## Information
+
+ - File extensions are removed in the resulting variable. Dotfiles will be imported without their preceding `.` (e.g. `.foo` -> `Foo` or `foo`)
+
+## Options
+
+`babel-plugin-wildcard` allows you to change various settings by providing an options object by using the following instead:
+
+```javascript
+{
+    plugins: [
+        ['wildcard', { options }]
+    ]
+}
+```
+
+where `{ options }` is the options object. The following options are available:
+
+### `exts`
+By default, the files with the following extensions: `["js", "es6", "es", "jsx"]`, will be imported. You can change this using:
+
+```javascript
+{
+    plugins: [
+        ['wildcard', {
+            'exts': ["js", "es6", "es", "jsx", "javascript"]
+        }]
+    ]
+}
+```
+
+### `nostrip`
+By default, the file extension will be removed in the generated `import` statements, you can change this using: 
+
+```javascript
+{
+    plugins: [
+        ['include', {
+            'nostrip': true
+        }]
+    ]
+}
+```
+
+### `noCamelCase`
+By default, the name will be automatically camel cased, the following regex is used to extract the words, those words then have their first letter capitalized and are joined together:
+
+```
+[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+
+```
+
+you can disable this behavior using:
+
+```javascript
+{
+    plugins: [
+        ['include', {
+            'noCamelCase': true
+        }]
+    ]
+}
+```
+
+Extensions are still removed (except dotfiles, see "Information").
