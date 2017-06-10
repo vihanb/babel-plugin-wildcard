@@ -5,7 +5,6 @@ export default function (babel) {
   const { types: t } = babel;
   
   return {
-    name: "wildcard",
     visitor: {
       ImportDeclaration(path, state) {
         let node = path.node, dec;
