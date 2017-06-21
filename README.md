@@ -43,6 +43,7 @@ With the following folder structure:
 |- dir
     |- a.js
     |- b.js
+    |- c.js
 ```
 
 the following JS:
@@ -59,15 +60,43 @@ import _wcImport from "./dir/a";
 Items.A = _wcImport;
 import _wcImport1 from "./dir/b";
 Items.B = _wcImport1;
+import _wcImport2 from "./dir/c";
+Items.C = _wcImport2;
 ```
 
 meaning you will be able to access the items using `Items.A` and `Items.B`.
+
+---
+
+You can also selectively choose files using:
+
+```javascript
+import { A, C } from "dir/*";
+```
+
+which in the above example would convert to:
+
+```
+import A from "./dir/a";
+import C from "./dir/c";
+```
+
+The above is like doing:
+
+```
+import * as temp from "dir";
+const { A, C } = temp;
+```
+
+---
 
 Files are automatically camel-cased and in the `import` statements the extensions are clipped unless specified otherwise (see below)
 
 ## Information
 
- - File extensions are removed in the resulting variable. Dotfiles will be imported without their preceding `.` (e.g. `.foo` -> `Foo` or `foo`)
+ - File extensions are removed in the resulting variable. Dotfiles will be imported without their preceding `.` (e.g. `.foo` -> `Foo` or `foo` depending on settings)
+ - in an `import { ... } from 'foo/*'`, the identifiers inside { ... } are the same as what their name
+ would be if you were to import the whole directory. This means it is the files' names' camel-cased and extensions removed etc. by default (depending on settings of course).
 
 ## Options
 
@@ -97,7 +126,7 @@ By default, the files with the following extensions: `["js", "es6", "es", "jsx"]
 ```
 
 ### `nostrip`
-By default, the file extension will be removed in the generated `import` statements, you can change this using: 
+By default, the file extension will be removed in the generated `import` statements, you can change this using:
 
 ```javascript
 {
@@ -108,6 +137,8 @@ By default, the file extension will be removed in the generated `import` stateme
     ]
 }
 ```
+
+This is useful when the extension of your source files is different from the outputted ones. (e.g. `.jsx` to `.js`).
 
 ### `noCamelCase`
 By default, the name will be automatically camel cased, the following regex is used to extract the words, those words then have their first letter capitalized and are joined together:
