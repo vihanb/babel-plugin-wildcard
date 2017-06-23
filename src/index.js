@@ -9,6 +9,10 @@ export default function (babel) {
             ImportDeclaration(path, state) {
                 let node = path.node, dec;
                 var src = path.node.source.value;
+
+                // Don't do anything if not a relative path
+                // if if not a relative path then a module
+                if (src[0] !== "." && src[0] !== "/") return;
                 
                 let addWildcard = false, // True if should perform transform
                 wildcardName;        // Name of the variable the wilcard will go in
@@ -141,7 +145,6 @@ export default function (babel) {
                         
                         // Special behavior if 'filterNames'
                         if (filterNames.length > 0) {
-                            console.log(fancyName, name, id);
                             let importDeclaration = t.importDeclaration(
                                 [t.importDefaultSpecifier(
                                     t.identifier(fancyName)
