@@ -167,9 +167,8 @@ export default function (babel) {
                         let thing = t.expressionStatement(
                             t.assignmentExpression("=", t.memberExpression(
                                 t.identifier(wildcardName),
-                                t.identifier(
-                                    fancyName
-                                )
+                                t.stringLiteral(fancyName),
+                                true
                             ), id
                         ));
                         
