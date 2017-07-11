@@ -29,13 +29,14 @@ export default function (babel) {
                     src = path.node.source.value;
                 }
                 
+
                 // Get current filename so we can try to determine the folder
                 var name = this.file.parserOpts.sourceFileName || this.file.parserOpts.filename;
 
                 var files = [];
                 var dir = _path.join(_path.dirname(name), src); // path of the target dir.
 
-                for (var i = 0; i < node.specifiers.length; i++) {
+                for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
                     
                     if (t.isImportNamespaceSpecifier(dec) && !_fs.statSync(dir).isFile()) {
