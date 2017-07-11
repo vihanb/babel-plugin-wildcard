@@ -22,17 +22,24 @@ export default function (babel) {
                 
                 // has a /* specifing explicitly to use wildcard
                 let isExplicitWildcard = /\/\*$/.test(src);
-                
+
                 // in the above case we need to remove the trailing /*
                 if (isExplicitWildcard) {
                     path.node.source.value = path.node.source.value.substring(0, src.length - 2);
                     src = path.node.source.value;
                 }
                 
+
+                // Get current filename so we can try to determine the folder
+                var name = this.file.parserOpts.sourceFileName || this.file.parserOpts.filename;
+
+                var files = [];
+                var dir = _path.join(_path.dirname(name), src); // path of the target dir.
+
                 for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
                     
-                    if (t.isImportNamespaceSpecifier(dec)) {
+                    if (t.isImportNamespaceSpecifier(dec) && !_fs.statSync(dir).isFile()) {
                         addWildcard = true;
                         wildcardName = node.specifiers[i].local.name;
                         node.specifiers.splice(i, 1);
@@ -73,12 +80,6 @@ export default function (babel) {
                         );
                         path.insertBefore(obj);
                     }
-                    
-                    // Get current filename so we can try to determine the folder
-                    var name = this.file.parserOpts.sourceFileName || this.file.parserOpts.filename;
-                    
-                    var files = [];
-                    var dir = _path.join(_path.dirname(name), src); // path of the target dir.
                     
                     // Will throw if the path does not point to a dir
                     try {
