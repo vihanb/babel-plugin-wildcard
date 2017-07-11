@@ -29,7 +29,7 @@ export default function (babel) {
                     src = path.node.source.value;
                 }
                 
-                for (var i = 0; i < node.specifiers.length; i++) {
+                for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
                     
                     if (t.isImportNamespaceSpecifier(dec)) {
