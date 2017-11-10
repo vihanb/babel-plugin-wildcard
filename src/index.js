@@ -39,7 +39,7 @@ export default function (babel) {
                 for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
                     
-                    if (t.isImportNamespaceSpecifier(dec) && !_fs.statSync(dir).isFile()) {
+                    if (t.isImportNamespaceSpecifier(dec) && _fs.existsSync(dir) && !_fs.statSync(dir).isFile()) {
                         addWildcard = true;
                         wildcardName = node.specifiers[i].local.name;
                         node.specifiers.splice(i, 1);
