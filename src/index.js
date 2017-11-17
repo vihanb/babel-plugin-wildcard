@@ -31,7 +31,7 @@ export default function (babel) {
                     src = path.node.source.value.substring(0, lastSlash);
                     const filenameGlob = path.node.source.value.substring(lastSlash + 1);
                     path.node.source.value = src;
-                    filenameRegex = filenameGlob.replace(/[*\(\[\)\]]/g, character => {
+                    filenameRegex = filenameGlob.replace(/[*\.\(\[\)\]]/g, character => {
                         switch(character) {
                             case '*':
                                 return '.*';
@@ -39,6 +39,7 @@ export default function (babel) {
                             case ')':
                             case '[':
                             case ']':
+                            case '.':
                                 return '\\' + character;
                         }
                         return character;
