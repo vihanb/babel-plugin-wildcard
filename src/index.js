@@ -1,5 +1,6 @@
 import _path from 'path';
 import _fs from 'fs';
+import recursiveReaddirSync from 'recursive-readdir-sync';
 
 export default function (babel) {
     const { types: t } = babel;
@@ -101,7 +102,9 @@ export default function (babel) {
                     
                     // Will throw if the path does not point to a dir
                     try {
-                        let r = _fs.readdirSync(dir);
+                        let r = recursiveReaddirSync(dir)
+                            .map(f => f.replace(dir + '/', '')) // Handle non-recursive
+                            .map(f => f.replace(dir, ''));
                         for (var i = 0; i < r.length; i++) {
                             // Check extension is of one of the aboves
                             const {name, ext} = _path.parse(r[i]);
@@ -122,35 +125,30 @@ export default function (babel) {
                         let id = path.scope.generateUidIdentifier("wcImport");
                         
                         var file = files[i];
-                        
-                        // Strip extension
-                        var fancyName = file.replace(/(?!^)\.[^.\s]+$/, "");
-                        
-                        // Handle dotfiles, remove prefix `.` in that case
-                        if (fancyName[0] === ".") {
-                            fancyName = fancyName.substring(1);
-                        }
-                        
-                        // If we're allowed to camel case, which is default, we run it
-                        // through this regex which converts it to a PascalCase variable.
-                        if (state.opts.noCamelCase !== true) {
-                            fancyName = fancyName.match(/[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+/g).map(s => s[0].toUpperCase() + s.substring(1)).join("");
-                        }
-
-                        // Now we're 100% settled on the fancyName, if the user
-                        // has provided a filer, we will check it:
-                        if (filterNames.length > 0) {
-                            // Find a filter name
-                            let res = null;
-                            for (let j = 0; j < filterNames.length; j++) {
-                                if (filterNames[j].original === fancyName) {
-                                    res = filterNames[j];
-                                    break;
+                        var parts = file.split('/')
+                            // Set the fancy name based on options
+                            .map(part => getName(part, state.opts))
+                            // Now we're 100% settled on the fancyName, if the user
+                            // has provided a filter, we will check it:
+                            .map(part => {
+                                if (filterNames.length > 0) {
+                                    // Find a filter name
+                                    let res = null;
+                                    for (let j = 0; j < filterNames.length; j++) {
+                                        if (filterNames[j].original === part) {
+                                            res = filterNames[j];
+                                            break;
+                                        }
+                                    }
+                                    if (res === null) return null;
+                                    return res.local;
                                 }
-                            }
-                            if (res === null) continue;
-                            fancyName = res.local;
-                        }
+                                return part;
+                            })
+                            .filter(part => part !== null);
+
+                        // If after filtering we have no parts left then continue
+                        if (parts.length === 0) continue;
                         
                         // This will remove file extensions from the generated `import`.
                         // This is useful if your src/ files are for example .jsx or
@@ -158,7 +156,7 @@ export default function (babel) {
                         // For situations like webpack you may want to disable this
                         var name;
                         if (state.opts.nostrip !== true) {
-                            name = "./" + _path.join(src, _path.basename(file));
+                            name = "./" + _path.join(src, _path.dirname(file), _path.basename(file));
                         } else {
                             name = "./" + _path.join(src, file);
                         }
@@ -166,9 +164,9 @@ export default function (babel) {
                         // Special behavior if 'filterNames'
                         if (filterNames.length > 0) {
                             let importDeclaration = t.importDeclaration(
-                                [t.importDefaultSpecifier(
-                                    t.identifier(fancyName)
-                                )],
+                                parts.map(part => t.importDefaultSpecifier(
+                                    t.identifier(part)
+                                )),
                                 t.stringLiteral(name)
                             );
                             path.insertAfter(importDeclaration);
@@ -183,14 +181,39 @@ export default function (babel) {
                             t.stringLiteral(name)
                         );
                         
-                        // Assign it
-                        let thing = t.expressionStatement(
-                            t.assignmentExpression("=", t.memberExpression(
+                        // Initialize the top level directory as an empty object
+                        const nested = parts.slice(0, -1);
+                        nested.forEach(nest => {
+                            let setup = t.expressionStatement(
+                                t.assignmentExpression("=",
+                                    t.memberExpression(
+                                        t.identifier(wildcardName),
+                                        t.stringLiteral(nest),
+                                        true
+                                    )
+                                , t.objectExpression([]))
+                            );
+                            path.insertBefore(setup);
+                        });
+
+                        // Chain the parts for access
+                        const access = parts.reduce((prev, curr) => {
+                            if (!prev) return t.memberExpression(
                                 t.identifier(wildcardName),
-                                t.stringLiteral(fancyName),
+                                t.stringLiteral(curr),
                                 true
-                            ), id
-                        ));
+                            );
+                            return t.memberExpression(
+                                prev,
+                                t.stringLiteral(curr),
+                                true
+                            );
+                        }, null);
+
+                        // Assign the file to the parts
+                        let thing = t.expressionStatement(
+                            t.assignmentExpression("=", access, id)
+                        );
                         
                         path.insertAfter(thing);
                         path.insertAfter(importDeclaration);
@@ -203,4 +226,21 @@ export default function (babel) {
             }
         }
     };
+}
+
+function getName(originalName, opts) {
+    // Strip extension
+    var fancyName = originalName.replace(/(?!^)\.[^.\s]+$/, "");
+
+    // Handle dotfiles, remove prefix `.` in that case
+    if (fancyName[0] === ".") {
+        fancyName = fancyName.substring(1);
+    }
+
+    // If we're allowed to camel case, which is default, we run it
+    // through this regex which converts it to a PascalCase variable.
+    if (opts.noCamelCase !== true) {
+        fancyName = fancyName.match(/[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+/g).map(s => s[0].toUpperCase() + s.substring(1)).join("");
+    }
+    return fancyName;
 }

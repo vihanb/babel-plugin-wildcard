@@ -26,6 +26,7 @@
     "chalk": "^1.1.3",
     "clear": "0.0.1",
     "diff": "^3.0.1",
-    "nodemon": "^1.12.1"
+    "nodemon": "^1.12.1",
+    "recursive-readdir-sync": "^1.0.6"
   }
 }
