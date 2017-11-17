@@ -181,20 +181,32 @@ export default function (babel) {
                             t.stringLiteral(name)
                         );
                         
-                        // Initialize the top level directory as an empty object
+                        // Initialize the top level directories as an empty objects
                         const nested = parts.slice(0, -1);
-                        nested.forEach(nest => {
-                            let setup = t.expressionStatement(
-                                t.assignmentExpression("=",
-                                    t.memberExpression(
-                                        t.identifier(wildcardName),
-                                        t.stringLiteral(nest),
-                                        true
-                                    )
-                                , t.objectExpression([]))
+                        nested.reduce((prev, curr) => {
+                            if (!prev) {
+                                const member = t.memberExpression(
+                                    t.identifier(wildcardName),
+                                    t.stringLiteral(curr),
+                                    true
+                                );
+                                const setup = t.expressionStatement(
+                                    t.assignmentExpression("=", member, t.objectExpression([]))
+                                );
+                                path.insertBefore(setup);
+                                return member;
+                            }
+                            const member = t.memberExpression(
+                                prev,
+                                t.stringLiteral(curr),
+                                true
+                            );
+                            const setup = t.expressionStatement(
+                                t.assignmentExpression("=", member, t.objectExpression([]))
                             );
                             path.insertBefore(setup);
-                        });
+                            return member;
+                        }, null);
 
                         // Chain the parts for access
                         const access = parts.reduce((prev, curr) => {
