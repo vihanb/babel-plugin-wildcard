@@ -21,12 +21,30 @@ export default function (babel) {
                 let filterNames = []; // e.g. A, B, C
                 
                 // has a /* specifing explicitly to use wildcard
-                let isExplicitWildcard = /\/\*$/.test(src);
+                const wildcardRegex = /\/([^\/]*\*[^\/]*)$/;
+                let isExplicitWildcard = wildcardRegex.test(src);
+                let filenameRegex = new RegExp('.+');
 
                 // in the above case we need to remove the trailing /*
                 if (isExplicitWildcard) {
-                    path.node.source.value = path.node.source.value.substring(0, src.length - 2);
-                    src = path.node.source.value;
+                    const lastSlash = path.node.source.value.lastIndexOf('/');
+                    src = path.node.source.value.substring(0, lastSlash);
+                    const filenameGlob = path.node.source.value.substring(lastSlash + 1);
+                    path.node.source.value = src;
+                    filenameRegex = filenameGlob.replace(/[*\.\(\[\)\]]/g, character => {
+                        switch(character) {
+                            case '*':
+                                return '.*';
+                            case '(':
+                            case ')':
+                            case '[':
+                            case ']':
+                            case '.':
+                                return '\\' + character;
+                        }
+                        return character;
+                    });
+                    filenameRegex = new RegExp(filenameRegex);
                 }
                 
 
@@ -86,7 +104,8 @@ export default function (babel) {
                         let r = _fs.readdirSync(dir);
                         for (var i = 0; i < r.length; i++) {
                             // Check extension is of one of the aboves
-                            if (exts.indexOf(_path.extname(r[i]).substring(1)) > -1) {
+                            const {name, ext} = _path.parse(r[i]);
+                            if (exts.indexOf(ext.substring(1)) > -1 && filenameRegex.test(name)) {
                                 files.push(r[i]);
                             }
                         }
@@ -94,7 +113,7 @@ export default function (babel) {
                         console.warn(`Wildcard for ${name} points at ${src} which is not a directory.`);
                         return;
                     }
-                    
+
                     // This is quite a mess but it essentially formats the file
                     // extension, and adds it to the object
                     for (var i = 0; i < files.length; i++) {
@@ -117,7 +136,7 @@ export default function (babel) {
                         if (state.opts.noCamelCase !== true) {
                             fancyName = fancyName.match(/[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+/g).map(s => s[0].toUpperCase() + s.substring(1)).join("");
                         }
-                        
+
                         // Now we're 100% settled on the fancyName, if the user
                         // has provided a filer, we will check it:
                         if (filterNames.length > 0) {

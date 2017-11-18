@@ -90,6 +90,32 @@ const { A, C } = temp;
 
 ---
 
+There is also simple Glob support so given the directory structure:
+
+```
+|- index.js
+|- dir
+    |- a.js
+    |- a.spec.js
+    |- b.js
+    |- b.spec.js
+```
+
+this import:
+
+```javascript
+import * as tests from './dir/*.spec';
+```
+
+will compile to:
+
+```javascript
+import aSpec from './dir/a.spec';
+import bSpec from './dir/b.spec';
+```
+
+---
+
 Files are automatically camel-cased and in the `import` statements the extensions are clipped unless specified otherwise (see below)
 
 ## Information
