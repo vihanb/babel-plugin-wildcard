@@ -68,6 +68,38 @@ meaning you will be able to access the items using `Items.A` and `Items.B`.
 
 ---
 
+The above works recursively with nested directories as well:
+
+```
+|- index.js
+|- dir
+    |- a.js
+    |- c.js
+    |- nested
+        |- b.js
+```
+
+the following JS:
+
+```javascript
+import * as Items from './dir';
+```
+
+will be compiled to:
+
+```javascript
+const Items = {};
+import _wcImport from "./dir/a";
+Items.A = _wcImport;
+import _wcImport1 from "./dir/c";
+Items.C = _wcImport1;
+const Items.Nested = {};
+import _wcImport3 from "./dir/nested/c";
+Items.Nested.C = _wcImport3;
+```
+
+---
+
 You can also selectively choose files using:
 
 ```javascript
@@ -116,7 +148,7 @@ import bSpec from './dir/b.spec';
 
 ---
 
-Files are automatically camel-cased and in the `import` statements the extensions are clipped unless specified otherwise (see below)
+Files and nested directory names are automatically camel-cased and in the `import` statements the extensions are clipped unless specified otherwise (see below)
 
 ## Information
 
