@@ -55,6 +55,7 @@ export default function (babel) {
                 var files = [];
                 var dir = _path.join(_path.dirname(name), src); // path of the target dir.
 
+                const alreadyGeneratedNests = {};
                 for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
                     
@@ -185,6 +186,10 @@ export default function (babel) {
                         const nested = parts.slice(0, -1);
                         nested.reduce((prev, curr) => {
                             if (!prev) {
+                                if (alreadyGeneratedNests[curr]) return {
+                                    path: curr,
+                                    member: alreadyGeneratedNests[curr],
+                                };
                                 const member = t.memberExpression(
                                     t.identifier(wildcardName),
                                     t.stringLiteral(curr),
@@ -194,10 +199,18 @@ export default function (babel) {
                                     t.assignmentExpression("=", member, t.objectExpression([]))
                                 );
                                 path.insertBefore(setup);
-                                return member;
+                                alreadyGeneratedNests[curr] = member;
+                                return {
+                                    path: curr,
+                                    member,
+                                };
                             }
+                            if (alreadyGeneratedNests[prev.path + '.' + curr]) return {
+                                path: prev.path + '.' + curr,
+                                member: alreadyGeneratedNests[prev.path + '.' + curr],
+                            };
                             const member = t.memberExpression(
-                                prev,
+                                prev.member,
                                 t.stringLiteral(curr),
                                 true
                             );
@@ -205,7 +218,11 @@ export default function (babel) {
                                 t.assignmentExpression("=", member, t.objectExpression([]))
                             );
                             path.insertBefore(setup);
-                            return member;
+                            alreadyGeneratedNests[prev.path + '.' + curr] = member;
+                            return {
+                                path: prev.path + '.' + curr,
+                                member,
+                            };
                         }, null);
 
                         // Chain the parts for access
