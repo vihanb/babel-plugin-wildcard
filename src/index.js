@@ -223,7 +223,7 @@ export default function (babel) {
                         }, null);
 
                         // Chain the parts for access
-                        const access = parts.reduce((prev, curr) => {
+                        const accessPoint = parts.reduce((prev, curr) => {
                             if (!prev) return t.memberExpression(
                                 t.identifier(wildcardName),
                                 t.stringLiteral(curr),
@@ -237,11 +237,11 @@ export default function (babel) {
                         }, null);
 
                         // Assign the file to the parts
-                        let thing = t.expressionStatement(
-                            t.assignmentExpression("=", access, id)
+                        let setter = t.expressionStatement(
+                            t.assignmentExpression("=", accessPoint, id)
                         );
                         
-                        path.insertAfter(thing);
+                        path.insertAfter(setter);
                         path.insertAfter(importDeclaration);
                     }
                     
