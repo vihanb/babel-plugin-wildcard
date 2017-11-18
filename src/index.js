@@ -125,7 +125,7 @@ export default function (babel) {
                         var file = files[i];
                         var parts = file.split('/')
                             // Set the fancy name based on options
-                            .map(part => getName(part, state.opts))
+                            .map(part => getFancyName(part, state.opts))
                             // Now we're 100% settled on the fancyName, if the user
                             // has provided a filter, we will check it:
                             .map(part => {
@@ -254,7 +254,7 @@ export default function (babel) {
     };
 }
 
-function getName(originalName, opts) {
+function getFancyName(originalName, opts) {
     // Strip extension
     var fancyName = originalName.replace(/(?!^)\.[^.\s]+$/, "");
 
