@@ -107,11 +107,41 @@ this import:
 import * as tests from './dir/*.spec';
 ```
 
-will compile to:
+will (effectively) compile to:
 
 ```javascript
-import aSpec from './dir/a.spec';
-import bSpec from './dir/b.spec';
+const tests = {
+    aSpec: require('./dir/a.spec'),
+    bSpec: require('./dir/b.spec'),
+};
+```
+
+---
+
+Similarly, you can limit the files imported to a specific extension. With this directory structure:
+
+```
+|- index.js
+|- dir
+    |- a.js
+    |- b.jsx
+    |- c.jsx
+    |- d.js
+```
+
+and this import:
+
+```javascript
+import * as jsx from './dir/*.jsx';
+```
+
+will (effectively) compile to:
+
+```javascript
+const jsx = {
+    B: require('./dir/b.jsx'),
+    C: require('./dir/c.jsx'),
+};
 ```
 
 ---
@@ -186,3 +216,32 @@ you can disable this behavior using:
 ```
 
 Extensions are still removed (except dotfiles, see "Information").
+
+### `aliases` / `useWebpackAliases`
+By default, wildcards only work for paths that start with `.` or `/` (i.e. explicit relative/absolute paths). If your imports don't explicitly follow that pattern (i.e. you're using Webpack aliases) you can provide a list of aliases to help with path resolution like so:
+
+```javascript
+{
+    plugins: [
+        ['wildcard', {
+            'aliases' : {
+                'pathOne': '/some/path/to/alias',
+                'pathTwo': '/another/path/to/alias'
+            }
+        }]
+    ]
+}
+```
+
+If you've already defined a set of aliases in your Webpack config, just set the `useWebpackAliases` flag to `true`. By default, this will look for a `webpack.config.js` file in the CWD. You may specify a different path to your Webpack config file if necessary with the `webpackConfigFile` option.
+
+```javascript
+{
+    plugins: [
+        ['wildcard', {
+            'useWebpackAliases': true,
+            'webpackConfigFile' : '/path/to/webpack.config.js'
+        }]
+    ]
+}
+```
