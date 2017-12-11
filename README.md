@@ -93,7 +93,7 @@ import _wcImport from "./dir/a";
 Items.A = _wcImport;
 import _wcImport1 from "./dir/c";
 Items.C = _wcImport1;
-const Items.Nested = {};
+Items.Nested = {};
 import _wcImport3 from "./dir/nested/c";
 Items.Nested.C = _wcImport3;
 ```
