@@ -1,0 +1,7 @@
+{
+    "aliases": {
+        "manualAlias": "./data/deep/structure"
+    },
+    "useWebpackAliases": true,
+    "webpackConfigFile": "./test/fixtures/alias/webpack.config.js"
+}
