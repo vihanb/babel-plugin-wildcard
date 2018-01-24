@@ -24,12 +24,8 @@ function runTests() {
 }
 
 function runTest(dir) {
-	var opts = {};
-	try {
-		opts = JSON.parse(fs.readFileSync(dir.path + '/options.json', 'utf-8'));
-    } catch(err) {}
 	var output = babel.transformFileSync(dir.path + '/actual.js', {
-		plugins: [[pluginPath, opts]],
+		plugins: [pluginPath],
         presets: []
 	});
 
