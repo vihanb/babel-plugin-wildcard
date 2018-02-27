@@ -158,7 +158,7 @@ export default function (babel) {
                         // For situations like webpack you may want to disable this
                         var name;
                         if (state.opts.nostrip !== true) {
-                            name = "./" + _path.join(src, _path.basename(file));
+                            name = "./" + _path.join(src, _path.basename(file, _path.extname(file)));
                         } else {
                             name = "./" + _path.join(src, file);
                         }
