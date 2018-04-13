@@ -122,7 +122,7 @@ Files are automatically camel-cased and in the `import` statements the extension
 
  - File extensions are removed in the resulting variable. Dotfiles will be imported without their preceding `.` (e.g. `.foo` -> `Foo` or `foo` depending on settings)
  - in an `import { ... } from 'foo/*'`, the identifiers inside { ... } are the same as what their name
- would be if you were to import the whole directory. This means it is the files' names' camel-cased and extensions removed etc. by default (depending on settings of course).
+ would be if you were to import the whole directory. This means it is the files' names' pascal/camel-cased and extensions removed etc. by default (depending on settings of course).
 
 ## Options
 
@@ -157,7 +157,7 @@ By default, the file extension will be removed in the generated `import` stateme
 ```javascript
 {
     plugins: [
-        ['include', {
+        ['wildcard', {
             'nostrip': true
         }]
     ]
@@ -166,8 +166,21 @@ By default, the file extension will be removed in the generated `import` stateme
 
 This is useful when the extension of your source files is different from the outputted ones. (e.g. `.jsx` to `.js`).
 
-### `noCamelCase`
-By default, the name will be automatically camel cased, the following regex is used to extract the words, those words then have their first letter capitalized and are joined together:
+### `useCamelCase`
+By default the name is converted to PascalCase, if you prefer camelCase, you may set this option to true:
+
+```
+{
+    plugins: [
+        ['wildcard', {
+            'useCamelCase': true
+        }]
+    ]
+}
+```
+
+### `noModifyCase`
+By default, the name will be automatically pascal cased, the following regex is used to extract the words, those words then have their first letter capitalized and are joined together:
 
 ```
 [A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+
@@ -178,8 +191,8 @@ you can disable this behavior using:
 ```javascript
 {
     plugins: [
-        ['include', {
-            'noCamelCase': true
+        ['wildcard', {
+            'noModifyCase': true
         }]
     ]
 }

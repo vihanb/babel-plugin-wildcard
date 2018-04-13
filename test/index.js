@@ -25,7 +25,9 @@ function runTests() {
 
 function runTest(dir) {
 	var output = babel.transformFileSync(dir.path + '/actual.js', {
-		plugins: [pluginPath],
+		plugins: [[pluginPath, {
+			useCamelCase: false
+		}]],
         presets: []
 	});
 

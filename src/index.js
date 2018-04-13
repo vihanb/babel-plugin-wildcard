@@ -3,7 +3,7 @@ import _fs from 'fs';
 
 export default function (babel) {
     const { types: t } = babel;
-    
+
     return {
         visitor: {
             ImportDeclaration(path, state) {
@@ -13,13 +13,13 @@ export default function (babel) {
                 // Don't do anything if not a relative path
                 // if if not a relative path then a module
                 if (src[0] !== "." && src[0] !== "/") return;
-                
+
                 let addWildcard = false, // True if should perform transform
-                wildcardName;        // Name of the variable the wilcard will go in
+                    wildcardName;        // Name of the variable the wilcard will go in
                 // not set if you have a filter { A, B, C }
-                
+
                 let filterNames = []; // e.g. A, B, C
-                
+
                 // has a /* specifing explicitly to use wildcard
                 const wildcardRegex = /\/([^\/]*\*[^\/]*)$/;
                 let isExplicitWildcard = wildcardRegex.test(src);
@@ -46,7 +46,7 @@ export default function (babel) {
                     });
                     filenameRegex = new RegExp(filenameRegex);
                 }
-                
+
 
                 // Get current filename so we can try to determine the folder
                 var name = state.file.opts.filename;
@@ -56,13 +56,13 @@ export default function (babel) {
 
                 for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
-                    
+
                     if (t.isImportNamespaceSpecifier(dec) && _fs.existsSync(dir) && !_fs.statSync(dir).isFile()) {
                         addWildcard = true;
                         wildcardName = node.specifiers[i].local.name;
                         node.specifiers.splice(i, 1);
                     }
-                    
+
                     // This handles { A, B, C } from 'C/*'
                     if (t.isImportSpecifier(dec) && isExplicitWildcard) {
                         // original: the actual name to lookup
@@ -74,23 +74,29 @@ export default function (babel) {
                                 local: dec.local.name
                             }
                         );
-                        
+
                         addWildcard = true;
-                        
+
                         // Remove the specifier
                         node.specifiers.splice(i, 1);
                     }
-                    
+
                 }
-                
+
+                // If they are no specifies but it is explicit
+                if (isExplicitWildcard) {
+                    addWildcard = true;
+                    wildcardName = null;
+                }
+
                 // All the extensions that we should look at
                 var exts = state.opts.exts || ["js", "es6", "es", "jsx"];
-                
+
                 if (addWildcard) {
                     // Add the original object. `import * as A from 'foo';`
                     //  this creates `const A = {};`
                     // For filters this will be empty anyway
-                    if (filterNames.length === 0) {
+                    if (filterNames.length === 0 && wildcardName !== null) {
                         var obj = t.variableDeclaration(
                             "const", [
                                 t.variableDeclarator(t.identifier(wildcardName), t.objectExpression([]))
@@ -98,7 +104,7 @@ export default function (babel) {
                         );
                         path.insertBefore(obj);
                     }
-                    
+
                     // Will throw if the path does not point to a dir
                     try {
                         let r = _fs.readdirSync(dir);
@@ -120,21 +126,26 @@ export default function (babel) {
                         // name of temp. variable to store import before moved
                         // to object
                         let id = path.scope.generateUidIdentifier("wcImport");
-                        
+
                         var file = files[i];
-                        
+
                         // Strip extension
                         var fancyName = file.replace(/(?!^)\.[^.\s]+$/, "");
-                        
+
                         // Handle dotfiles, remove prefix `.` in that case
                         if (fancyName[0] === ".") {
                             fancyName = fancyName.substring(1);
                         }
-                        
+
                         // If we're allowed to camel case, which is default, we run it
                         // through this regex which converts it to a PascalCase variable.
-                        if (state.opts.noCamelCase !== true) {
-                            fancyName = fancyName.match(/[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+/g).map(s => s[0].toUpperCase() + s.substring(1)).join("");
+                        if (state.opts.noModifyCase !== true) {
+                            let parts = fancyName.match(/[A-Z][a-z]+(?![a-z])|[A-Z]+(?![a-z])|([a-zA-Z\d]+(?=-))|[a-zA-Z\d]+(?=_)|[a-z]+(?=[A-Z])|[A-Za-z0-9]+/g);
+                            if (state.opts.useCamelCase) {
+                                fancyName = parts[0].toLowerCase() + parts.slice(1).map(s => s[0].toUpperCase() + s.substring(1)).join("")
+                            } else {
+                                fancyName = parts.map(s => s[0].toUpperCase() + s.substring(1)).join("");
+                            }
                         }
 
                         // Now we're 100% settled on the fancyName, if the user
@@ -151,7 +162,7 @@ export default function (babel) {
                             if (res === null) continue;
                             fancyName = res.local;
                         }
-                        
+
                         // This will remove file extensions from the generated `import`.
                         // This is useful if your src/ files are for example .jsx or
                         // .es6 but your generated files are of a different extension.
@@ -162,7 +173,7 @@ export default function (babel) {
                         } else {
                             name = "./" + _path.join(src, file);
                         }
-                        
+
                         // Special behavior if 'filterNames'
                         if (filterNames.length > 0) {
                             let importDeclaration = t.importDeclaration(
@@ -174,7 +185,7 @@ export default function (babel) {
                             path.insertAfter(importDeclaration);
                             continue;
                         }
-                        
+
                         // Generate temp. import declaration
                         let importDeclaration = t.importDeclaration(
                             [t.importDefaultSpecifier(
@@ -182,20 +193,23 @@ export default function (babel) {
                             )],
                             t.stringLiteral(name)
                         );
-                        
+
                         // Assign it
-                        let thing = t.expressionStatement(
-                            t.assignmentExpression("=", t.memberExpression(
-                                t.identifier(wildcardName),
-                                t.stringLiteral(fancyName),
-                                true
-                            ), id
-                        ));
-                        
-                        path.insertAfter(thing);
+                        if (wildcardName !== null) {
+                            let thing = t.expressionStatement(
+                                t.assignmentExpression("=", t.memberExpression(
+                                    t.identifier(wildcardName),
+                                    t.stringLiteral(fancyName),
+                                    true
+                                ), id
+                            ));
+
+                            path.insertAfter(thing);
+                        }
+
                         path.insertAfter(importDeclaration);
                     }
-                    
+
                     if (path.node.specifiers.length === 0) {
                         path.remove();
                     }

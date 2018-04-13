@@ -1,12 +1,15 @@
 {
   "name": "babel-plugin-wildcard",
-  "version": "4.0.0",
+  "version": "5.0.0",
   "description": "`import` now works with directories",
   "main": "lib/index.js",
   "scripts": {
     "build": "babel -d ./lib ./src",
     "prepublish": "babel -d ./lib ./src --minified",
     "test": "node test"
+  },
+  "bin": {
+    "bpwc": "./index.js"
   },
   "repository": {
     "type": "git",
@@ -25,5 +28,8 @@
     "chalk": "^1.1.3",
     "clear": "0.0.1",
     "diff": "^3.0.1"
+  },
+  "dependencies": {
+    "rimraf": "^2.6.2"
   }
 }
