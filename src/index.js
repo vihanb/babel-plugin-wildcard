@@ -7,6 +7,9 @@ export default function (babel) {
     return {
         visitor: {
             ImportDeclaration(path, state) {
+                //Don't do anything inside node_modules
+                if (_path.relative(state.file.opts.root, state.file.opts.filename).match(/^node_modules/)) return;
+
                 let node = path.node, dec;
                 var src = path.node.source.value;
 
