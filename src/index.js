@@ -52,12 +52,17 @@ export default function (babel) {
                 var name = state.file.opts.filename;
 
                 var files = [];
+                var isDirs = [];
                 var dir = _path.join(_path.dirname(name), src); // path of the target dir.
 
                 for (var i = node.specifiers.length - 1; i >= 0; i--) {
                     dec = node.specifiers[i];
 
-                    if (t.isImportNamespaceSpecifier(dec) && _fs.existsSync(dir) && !_fs.statSync(dir).isFile()) {
+                    if (
+                        t.isImportNamespaceSpecifier(dec) &&
+                        _fs.existsSync(dir) &&
+                        !_fs.statSync(dir).isFile()
+                    ) {
                         addWildcard = true;
                         wildcardName = node.specifiers[i].local.name;
                         node.specifiers.splice(i, 1);
@@ -68,19 +73,16 @@ export default function (babel) {
                         // original: the actual name to lookup
                         // local: the name to import as, may be same as original
                         // We do this because of `import { A as B }`
-                        filterNames.push(
-                            {
-                                original: dec.imported.name,
-                                local: dec.local.name
-                            }
-                        );
+                        filterNames.push({
+                            original: dec.imported.name,
+                            local: dec.local.name
+                        });
 
                         addWildcard = true;
 
                         // Remove the specifier
                         node.specifiers.splice(i, 1);
                     }
-
                 }
 
                 // If they are no specifies but it is explicit
@@ -97,11 +99,12 @@ export default function (babel) {
                     //  this creates `const A = {};`
                     // For filters this will be empty anyway
                     if (filterNames.length === 0 && wildcardName !== null) {
-                        var obj = t.variableDeclaration(
-                            "const", [
-                                t.variableDeclarator(t.identifier(wildcardName), t.objectExpression([]))
-                            ]
-                        );
+                        var obj = t.variableDeclaration("const", [
+                            t.variableDeclarator(
+                                t.identifier(wildcardName),
+                                t.objectExpression([])
+                            )
+                        ]);
                         path.insertBefore(obj);
                     }
 
@@ -113,6 +116,7 @@ export default function (babel) {
                             const {name, ext} = _path.parse(r[i]);
                             if (exts.indexOf(ext.substring(1)) > -1 && filenameRegex.test(name)) {
                                 files.push(r[i]);
+                                isDirs.push(!ext);
                             }
                         }
                     } catch(e) {
@@ -128,6 +132,7 @@ export default function (babel) {
                         let id = path.scope.generateUidIdentifier("wcImport");
 
                         var file = files[i];
+                        const isDir = isDirs[i];
 
                         // Strip extension
                         var fancyName = file.replace(/(?!^)\.[^.\s]+$/, "");
@@ -188,9 +193,11 @@ export default function (babel) {
 
                         // Generate temp. import declaration
                         let importDeclaration = t.importDeclaration(
-                            [t.importDefaultSpecifier(
-                                id
-                            )],
+                            [
+                                isDir
+                                    ? t.importNamespaceSpecifier(id)
+                                    : t.importDefaultSpecifier(id)
+                            ],
                             t.stringLiteral(name)
                         );
 
