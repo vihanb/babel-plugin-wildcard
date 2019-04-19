@@ -151,6 +151,8 @@ By default, the files with the following extensions: `["js", "es6", "es", "jsx"]
 }
 ```
 
+If you add the extension `""`, it will also import subdirectories.
+
 ### `nostrip`
 By default, the file extension will be removed in the generated `import` statements, you can change this using:
 
