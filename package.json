@@ -1,6 +1,6 @@
 {
   "name": "babel-plugin-wildcard",
-  "version": "5.0.0",
+  "version": "6.0.0",
   "description": "`import` now works with directories",
   "main": "lib/index.js",
   "scripts": {
