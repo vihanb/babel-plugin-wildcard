@@ -61,7 +61,8 @@ export default function (babel) {
                     if (
                         t.isImportNamespaceSpecifier(dec) &&
                         _fs.existsSync(dir) &&
-                        !_fs.statSync(dir).isFile()
+                        !_fs.statSync(dir).isFile() &&
+                        !_fs.existsSync(_path.join(dir, 'index.js'))
                     ) {
                         addWildcard = true;
                         wildcardName = node.specifiers[i].local.name;
